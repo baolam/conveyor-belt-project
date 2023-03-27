@@ -1,0 +1,48 @@
+body {
+    background-image: url("background.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.title {
+    color: darkorange;
+    font-size: xx-large;
+    padding: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px;
+}
+
+.camera-layout {
+    width: 100%;
+    background: white;
+}
+
+.image {
+    width: 100%;
+    margin-left: -16px;
+}
+
+.content-layout {
+    height: 500px;
+    width: 100%;
+    background: white;
+}
+
+.classification-result {
+    border: 1px dashed gray;
+}
+
+.manage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: x-large;
+    font-weight: bold;
+
+    /* Phần circle quanh số */
+    border-radius: 10%;
+    padding: 8px;
+    border: 2px dashed red;
+}
