@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const path = require("path");
 const socketio = require("socket.io");
+const notifier = require("node-notifier");
 
 const PORT = process.env.PORT || 3000;
 const layout = path.join(__dirname, "src", "interface", "layout", "build");
@@ -18,6 +19,12 @@ app.use("/", express.static(path.join(layout)));
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(layout, "index.html"));
+});
+
+app.get("/stop", (req, res) => {
+    res.status(200).send("OK");
+    device.disconnectSockets();
+    process.exit(0);
 });
 
 function update_stack(yellow, blue, undef)
@@ -58,7 +65,14 @@ device.on("connection", (_socket) => {
 
     _socket.on("update-classification", r => {
         user.emit("update-classification", r);
-    })
+    });
+
+    _socket.on("notification", (msg) => {
+        notifier.notify({
+            title : "Tin nhắn thông báo",
+            message : msg
+        });
+    });
 });
 
 server.listen(PORT, () => {

@@ -55,6 +55,7 @@ class App extends Component {
    */
   __updateClassification(content)
   {
+    let { msg, res } = content;
     console.log(content);
   }
 

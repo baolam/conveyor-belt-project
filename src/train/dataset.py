@@ -8,7 +8,7 @@ import cv2
 import os
 
 class _MyDataset(Dataset):
-    def __init__(self, cls_paths : List[str], transform = training_transform):
+    def __init__(self, cls_paths : List[str], transform = training_transform, allow_build_label : bool = True):
         super().__init__()
 
         self.links = []
@@ -20,8 +20,9 @@ class _MyDataset(Dataset):
             for point in points:
                 store = cls_paths[i] + "/" + point
                 self.links.append((store, i))
-            self.labels[cls_paths[i].split('/')[3]] = i
-            self.labels[i] = cls_paths[i].split('/')[3]
+            if allow_build_label:
+                self.labels[cls_paths[i].split('/')[3]] = i
+                self.labels[i] = cls_paths[i].split('/')[3]
     
     def __len__(self):
         return len(self.links)
@@ -33,3 +34,16 @@ class _MyDataset(Dataset):
         img = self.transform(img)
 
         return img, float(label)
+
+class _AutoEncoderDataset(_MyDataset):
+    def __init__(self, cls_paths: List[str], transform=training_transform):
+        super().__init__(cls_paths, transform, False)
+    
+    def __getitem__(self, index):
+        link, __ = self.links[index]
+        img = cv2.imread(link)
+        img = cv2.resize(img, (WHEIGHT, WWIDTH))
+        img = self.transform(img)
+        img = img.reshape(-1)
+        
+        return img, img

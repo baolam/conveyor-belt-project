@@ -1,0 +1,100 @@
+from yolobit import *
+import machine
+from i2c_motor_driver import MotorDriver4Channel
+import _thread
+from mqtt import *
+from yolobit import *
+button_a.on_pressed = None
+button_b.on_pressed = None
+button_a.on_pressed_ab = button_b.on_pressed_ab = -1
+from hcsr04 import HCSR04
+import time
+
+driver = MotorDriver4Channel(machine.SoftI2C(scl=machine.Pin(22), sda=machine.Pin(21), freq=100000))
+
+# Mô tả hàm này...
+def conveyor_belt(working, speed):
+  global left, object2, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  if working:
+    driver.set_motor(1,speed)
+  else:
+    driver.set_motor(1,0)
+
+def classification_result(res):
+  has_object = 0
+  classify(res)
+  
+def threadFunction__dz_60A0osBr_bd____5B_60pO():
+  mqtt.on_receive_message("classification", classification_result)
+  mqtt.check_message()
+
+_thread.start_new_thread(threadFunction__dz_60A0osBr_bd____5B_60pO,())
+
+# Mô tả hàm này...
+def initalize_distance_sensor():
+  global working, speed, left, object2, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  detect_object = HCSR04(trigger_pin=pin3.pin, echo_pin=pin6.pin)
+  yellow_stack = HCSR04(trigger_pin=pin10.pin, echo_pin=pin13.pin)
+  blue_stack = HCSR04(trigger_pin=pin14.pin, echo_pin=pin15.pin)
+  white_stack = HCSR04(trigger_pin=pin12.pin, echo_pin=pin16.pin)
+
+# Mô tả hàm này...
+def camera():
+  global working, speed, left, object2, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  if detect_object.distance_cm() < 10:
+    has_object = 1
+    driver.set_motor(1,(-90))
+    time.sleep_ms(750)
+    conveyor_belt(0, default_conveyor_belt)
+  else:
+    has_object = 0
+    conveyor_belt(1, default_conveyor_belt)
+
+# Mô tả hàm này...
+def wifi2():
+  global working, speed, left, object2, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  mqtt.connect_wifi('VNPT-VINH CHANH', '0967030483')
+  mqtt.connect_broker(server='mqtt.ohstem.vn', port=1883, username='nguyenducbaolam', password='0339588476')
+
+# Mô tả hàm này...
+def classify_with_bars(left):
+  global working, speed, object2, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  if left:
+    driver.set_motor(0,50)
+    while (yellow_stack.distance_cm()) > 5:
+      pass
+    driver.set_motor_time(0,(-10), 0.2)
+  else:
+    driver.set_motor(0,(-50))
+    while (white_stack.distance_cm()) > 5:
+      pass
+    driver.set_motor_time(0,10, 0.2)
+
+# Mô tả hàm này...
+def classify(object2):
+  global working, speed, left, default_conveyor_belt, detect_object, yellow_stack, has_object, blue_stack, result, white_stack
+  conveyor_belt(0, default_conveyor_belt)
+  if object2 == 0:
+    conveyor_belt(1, default_conveyor_belt)
+    while (blue_stack.distance_cm()) > 5:
+      pass
+    conveyor_belt(0, default_conveyor_belt)
+  else:
+    if object2 == 1:
+      object2 = 0
+    else:
+      object2 = 1
+    classify_with_bars(object2)
+
+if True:
+  default_conveyor_belt = 90
+  initalize_distance_sensor()
+  wifi2()
+
+while True:
+  camera()
+  if has_object:
+    conveyor_belt(0, default_conveyor_belt)
+    mqtt.publish("detect", "wanna")
+    while has_object == 1:
+      pass

@@ -8,19 +8,21 @@ from ..constant import *
 from ..preprocess import epoch
 from .dataset import _MyDataset
 
+bce_loss = nn.BCELoss()
+
 def train(epochs, model : nn.Module, saved : str, 
     labels : List[str] = [TOMATO_DS_PẠTH, POTATO_DS_PATH], 
-    batch_size : int = 64):
+    batch_size : int = 64, loss = bce_loss, _dataset = _MyDataset, reshape : bool = True):
     from torch import save
 
-    ds_train = _MyDataset(labels)
+    ds_train = _dataset(labels)
     train_lo = DataLoader(ds_train, batch_size, shuffle=True)
 
     losses = []
     min_loss = 1000
 
     for e in range(epochs):
-        l = epoch(train_lo, model)
+        l = epoch(train_lo, model, loss, reshape)
         print("Epoch = {}. Loss = {}".format(e + 1, l))
         losses.append(l)
 
@@ -32,4 +34,7 @@ def train(epochs, model : nn.Module, saved : str,
     # x, y = next(iter(train_lo))
     # print(x.shape)
     # print(y)
+    plt.plot(losses)
+    plt.show()
+
     return losses

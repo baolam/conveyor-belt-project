@@ -6,10 +6,7 @@ from torch import float32
 
 from ..constant import *
 
-bce_loss = nn.BCELoss()
-mse_loss = nn.MSELoss()
-
-def epoch(train : DataLoader, model : nn.Module, loss_func = bce_loss):
+def epoch(train : DataLoader, model : nn.Module, loss_func, reshape : bool):
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     model.to(device)
 
@@ -19,7 +16,8 @@ def epoch(train : DataLoader, model : nn.Module, loss_func = bce_loss):
         x = x.to(device)
         y = y.to(dtype=float32, device=device)
         y_hat = model.forward(x)
-        y_hat = y_hat.reshape(-1)
+        if reshape:
+            y_hat = y_hat.reshape(-1)
 
         optimizer.zero_grad()
 
