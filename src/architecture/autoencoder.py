@@ -7,19 +7,19 @@ class AutoEncoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.activation = nn.ReLU()
 
-        self.linear_1 = nn.Linear(WHEIGHT * WWIDTH * CHANNEL, 512)
-        self.batchnorm1 = nn.BatchNorm1d(512)
-        self.linear_2 = nn.Linear(512, 512)
-        self.batchnorm2 = nn.BatchNorm1d(512)
+        self.linear_1 = nn.Linear(WHEIGHT * WWIDTH * CHANNEL, 256)
+        self.batchnorm1 = nn.BatchNorm1d(256)
+        self.linear_2 = nn.Linear(256, 256)
+        self.batchnorm2 = nn.BatchNorm1d(256)
 
-        self.linear_3 = nn.Linear(512, 256)
-        self.batchnorm3 = nn.BatchNorm1d(256)
-        self.linear_4 = nn.Linear(256, 512)
-        self.batchnorm4 = nn.BatchNorm1d(512)
+        self.linear_3 = nn.Linear(256, 128)
+        self.batchnorm3 = nn.BatchNorm1d(128)
+        self.linear_4 = nn.Linear(128, 256)
+        self.batchnorm4 = nn.BatchNorm1d(256)
 
-        self.linear_5 = nn.Linear(512, 512)
-        self.batchnorm5 = nn.BatchNorm1d(512)
-        self.linear_6 = nn.Linear(512, WHEIGHT * WWIDTH * CHANNEL)
+        self.linear_5 = nn.Linear(256, 256)
+        self.batchnorm5 = nn.BatchNorm1d(256)
+        self.linear_6 = nn.Linear(256, WHEIGHT * WWIDTH * CHANNEL)
     
     def forward(self, x : Tensor):
         x = self.linear_1(x)

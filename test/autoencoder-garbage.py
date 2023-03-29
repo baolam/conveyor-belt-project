@@ -11,11 +11,44 @@ from src.constant import *
 
 mse_loss = nn.MSELoss()
 storage = "auc_garbage.pt"
-classification = AutoEncoder()
+# classification = AutoEncoder()
+classification = load(storage)
 classification.to(device)
+dataset = _AutoEncoderDataset([METAL_DS_PATH, NYLON_DS_PATH])
+loader = DataLoader(dataset, 1)
+classification.eval()
 
-from src.train import train
-train(100, classification, storage, 
-    loss=mse_loss, _dataset = _AutoEncoderDataset, 
-    reshape=False, labels=[METAL_DS_PATH, NYLON_DS_PATH]
-)
+# from src.train import train
+# train(10, classification, storage, 
+#     loss=mse_loss, _dataset = _AutoEncoderDataset, 
+#     reshape=False, labels=[METAL_DS_PATH, NYLON_DS_PATH]
+# )
+from matplotlib import pyplot as plt
+
+x, y = next(iter(loader))
+x = x.to(device)
+y = y.to(device)
+y_hat = classification.forward(x)
+
+y = y.reshape((CHANNEL, WHEIGHT, WWIDTH))
+y_hat = y_hat.reshape((CHANNEL, WHEIGHT, WWIDTH))
+
+import numpy as np
+# plt.imshow(np.array(y).transpose(1, 2, 0))
+# plt.imshow(np.array(y_hat.cpu().detach()).transpose(1, 2, 0))
+# plt.xticks([])
+# plt.yticks([])
+# plt.show()
+loss = mse_loss(y_hat, y)
+print(loss.item())
+
+rows, cols = 1, 2
+fig = plt.figure(figsize=(10, 7))
+
+fig.add_subplot(rows, cols, 1)
+plt.imshow(np.array(y.cpu().detach()).transpose(1, 2, 0))
+
+fig.add_subplot(rows, cols, 2)
+plt.imshow(np.array(y_hat.cpu().detach()).transpose(1, 2, 0))
+
+plt.show()

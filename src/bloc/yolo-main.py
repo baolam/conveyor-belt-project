@@ -109,3 +109,5 @@ while True:
     conveyor_belt(0, default_conveyor_belt)
     mqtt.publish("detect", "wanna")
     has_object = 2
+
+# https://app.ohstem.vn/#!/share/yolobit/2NdrCfxHHj2ZyGQFVRR6UNXrIzE

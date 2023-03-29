@@ -2,6 +2,7 @@ import cv2
 import datetime
 
 from torch import load
+from torch import nn
 from torch import Tensor
 from ...constant import *
 from ... import client
@@ -12,19 +13,33 @@ print("Nạp các mô hình deep learning...")
 vegetable = load("vegetable.pt")
 garbage = load("garbage.pt")
 color = load("color.pt")
+# Mô hình auto-encoder
+auc_veget = load("auc_veget.pt")
+auc_garbage = load("auc_garbage.pt")
+auc_color = load("auc_color.pt")
 print("Hoàn thành nạp các mô hình")
+print("Cài đặt chế độ hoạt động của các mô hình...")
+vegetable.eval(), garbage.eval(), color.eval()
+auc_veget.eval(), auc_garbage.eval(), auc_color.eval()
+print("Hoàn thành cài đặt chế độ hoạt động")
 
 Vegetable_Dataset = _MyDataset([TOMATO_DS_PẠTH, POTATO_DS_PATH])
 Garbage_Dataset = _MyDataset([METAL_DS_PATH, NYLON_DS_PATH])
 Color_Dataset = _MyDataset([RED_DS_PATH, YELLOW_DS_PATH])
 
 from .mqtt import _build
-
+diff_measure = nn.MSELoss()
 class Working:
     def __init__(self, threshold : float = 0.5):
         self._mode = -1
         self.allow = False
         self.threshold = threshold
+
+        self.outlier = {
+            0 : 0.01,
+            1 : 0.92,
+            2 : 1.5
+        }
     
     def update(self, mode : int):
         self._mode = mode
@@ -40,7 +55,6 @@ class Working:
             res = "L"
         elif res == 1:
             res = "R"
-        else: res = "F"
         return res
     
     def run(self, img):
@@ -57,8 +71,11 @@ class Working:
         img : Tensor = running_transform(img)
         img = img.unsqueeze(0)
 
-        result, _type = self.__classify(img)
-        code = self._direction(result)
+        code = "F"
+        _type = "N-O-N-E"
+        if self.__choose(img) == 0:
+            result, _type = self.__classify(img)
+            code = self._direction(result)
         self._send(_type, code)
 
         # Gọi lệnh này để gửi gói tin sang thiết bị
@@ -67,28 +84,66 @@ class Working:
         
         self.allow = False
     
-    def __classify(self, img):
+    def __classify(self, img, allow_probability : bool = False):
         '''
             Tiến hành phân loại + Xác định nhãn
         '''
         labels = Vegetable_Dataset.labels
-        res = 0
+        prob = 0
 
         img = img.to(device)
         if self._mode == 0:
-            res = vegetable.forward(img).item()
+            prob = vegetable.forward(img).item()
         if self._mode == 1:
             labels = Garbage_Dataset.labels
-            res = garbage.forward(img).item()
+            prob = garbage.forward(img).item()
         elif self._mode == 2:
             labels = Color_Dataset.labels
-            res = color.forward(img).item()
+            prob = color.forward(img).item()
 
-        if res < self.threshold:
-            res = 0
-        else: res = 1
+        res = 0
+        if prob >= self.threshold:
+            res = 1
+
+        if allow_probability:
+            return res, labels[res], prob
 
         return res, labels[res]
+
+    def __choose(self, img : Tensor, allow_theta = False):
+        '''
+            Gọi hàm này để trả về trường hợp có phải ngoại lai hay không
+            0 --> Không phải
+            1 --> Phải
+        '''
+        img = img.reshape(img.size()[0], -1)
+        y_hat = 0
+
+        img = img.to(device)
+        if self._mode == 0:
+            y_hat = auc_veget.forward(img)
+        elif self._mode == 1:
+            y_hat = auc_garbage.forward(img)
+        elif self._mode == 2:
+            y_hat = auc_color.forward(img)
+        
+        theta = diff_measure(y_hat, img) \
+            .item()
+        
+        r = 1
+        if theta <= self.outlier[self._mode]:
+            r = 0
+        
+        if allow_theta:
+            return r, theta
+        
+        return r
+
+    def classify(self, img):
+        return self.__classify(img, True)
+
+    def choose(self, img):
+        return self.__choose(img, True)
 
     def _send(self, _type, result):
         '''

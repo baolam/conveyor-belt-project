@@ -6,8 +6,9 @@ from torch import float32
 
 from ..constant import *
 
-def epoch(train : DataLoader, model : nn.Module, loss_func, reshape : bool):
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
+def epoch(train : DataLoader, model : nn.Module, loss_func, 
+        reshape : bool):
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     model.to(device)
 
     loss = 0
